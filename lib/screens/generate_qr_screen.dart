@@ -24,9 +24,9 @@ class _GenerateBarcodeScreenState extends State<GenerateBarcodeScreen> {
   final List<Map<String, dynamic>> _barcodeTypes = [
     {'name': 'Code 128', 'type': BarcodeType.Code128},
     {'name': 'Code 39', 'type': BarcodeType.Code39},
-    {'name': 'EAN-13', 'type': BarcodeType.EAN13},
-    {'name': 'EAN-8', 'type': BarcodeType.EAN8},
-    {'name': 'UPC-A', 'type': BarcodeType.UPCA},
+    {'name': 'EAN-13', 'type': BarcodeType.Ean13}, // تم تعديل الاسم
+    {'name': 'EAN-8', 'type': BarcodeType.Ean8},   // تم تعديل الاسم
+    {'name': 'UPC-A', 'type': BarcodeType.UpcA},   // تم تعديل الاسم
   ];
 
   Barcode _getBarcodeObject(BarcodeType type) {
@@ -35,11 +35,11 @@ class _GenerateBarcodeScreenState extends State<GenerateBarcodeScreen> {
         return Barcode.code128();
       case BarcodeType.Code39:
         return Barcode.code39();
-      case BarcodeType.EAN13:
+      case BarcodeType.Ean13:
         return Barcode.ean13();
-      case BarcodeType.EAN8:
+      case BarcodeType.Ean8:
         return Barcode.ean8();
-      case BarcodeType.UPCA:
+      case BarcodeType.UpcA:
         return Barcode.upcA();
       default:
         return Barcode.code128();
