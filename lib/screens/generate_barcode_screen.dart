@@ -5,7 +5,7 @@ import 'package:screenshot/screenshot.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gal/gal.dart';
 
 class GenerateBarcodeScreen extends StatefulWidget {
   const GenerateBarcodeScreen({super.key});
