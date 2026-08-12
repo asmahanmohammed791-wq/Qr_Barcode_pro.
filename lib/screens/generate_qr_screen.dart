@@ -29,7 +29,6 @@ class _GenerateBarcodeScreenState extends State<GenerateBarcodeScreen> {
     {'name': 'UPC-A', 'type': BarcodeType.UPCA},
   ];
 
-  // دالة تحويل BarcodeType إلى كائن Barcode المطلوب في BarcodeWidget
   Barcode _getBarcodeObject(BarcodeType type) {
     switch (type) {
       case BarcodeType.Code128:
@@ -62,7 +61,6 @@ class _GenerateBarcodeScreenState extends State<GenerateBarcodeScreen> {
       if (status.isGranted || await Permission.photos.request().isGranted) {
         final Uint8List? image = await _screenshotController.capture();
         if (image != null) {
-          // استخدام مكتبة Gal للحفظ في معرض الصور
           await Gal.putImageBytes(image);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -178,7 +176,7 @@ class _GenerateBarcodeScreenState extends State<GenerateBarcodeScreen> {
                     ],
                   ),
                   child: BarcodeWidget(
-                    barcode: _getBarcodeObject(_barcodeType), // تم التعديل هنا ليمر كائن Barcode صحيح
+                    barcode: _getBarcodeObject(_barcodeType),
                     data: _barcodeData,
                     width: 300,
                     height: 120,
