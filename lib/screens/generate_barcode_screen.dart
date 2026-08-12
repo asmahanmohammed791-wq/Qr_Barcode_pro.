@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:screenshot/screenshot.dart';
@@ -28,6 +29,24 @@ class _GenerateBarcodeScreenState extends State<GenerateBarcodeScreen> {
     {'name': 'UPC-A', 'type': BarcodeType.UPCA},
   ];
 
+  // دالة تحويل BarcodeType إلى كائن Barcode المطلوب في BarcodeWidget
+  Barcode _getBarcodeObject(BarcodeType type) {
+    switch (type) {
+      case BarcodeType.Code128:
+        return Barcode.code128();
+      case BarcodeType.Code39:
+        return Barcode.code39();
+      case BarcodeType.EAN13:
+        return Barcode.ean13();
+      case BarcodeType.EAN8:
+        return Barcode.ean8();
+      case BarcodeType.UPCA:
+        return Barcode.upcA();
+      default:
+        return Barcode.code128();
+    }
+  }
+
   void _generateBarcode() {
     if (_controller.text.trim().isNotEmpty) {
       setState(() {
@@ -41,12 +60,10 @@ class _GenerateBarcodeScreenState extends State<GenerateBarcodeScreen> {
     try {
       final status = await Permission.storage.request();
       if (status.isGranted || await Permission.photos.request().isGranted) {
-        final image = await _screenshotController.capture();
+        final Uint8List? image = await _screenshotController.capture();
         if (image != null) {
-          await ImageGallerySaver.saveImage(
-            image,
-            name: 'barcode_${DateTime.now().millisecondsSinceEpoch}',
-          );
+          // استخدام مكتبة Gal للحفظ في معرض الصور
+          await Gal.putImageBytes(image);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Saved to gallery!')),
@@ -161,7 +178,7 @@ class _GenerateBarcodeScreenState extends State<GenerateBarcodeScreen> {
                     ],
                   ),
                   child: BarcodeWidget(
-                    barcode: _barcodeType,
+                    barcode: _getBarcodeObject(_barcodeType), // تم التعديل هنا ليمر كائن Barcode صحيح
                     data: _barcodeData,
                     width: 300,
                     height: 120,
