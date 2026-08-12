@@ -1,45 +1,69 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+import 'package:barcode_widget/barcode_widget.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gal/gal.dart';
 
-class GenerateQRScreen extends StatefulWidget {
-  const GenerateQRScreen({super.key});
+class GenerateBarcodeScreen extends StatefulWidget {
+  const GenerateBarcodeScreen({super.key});
 
   @override
-  State<GenerateQRScreen> createState() => _GenerateQRScreenState();
+  State<GenerateBarcodeScreen> createState() => _GenerateBarcodeScreenState();
 }
 
-class _GenerateQRScreenState extends State<GenerateQRScreen> {
+class _GenerateBarcodeScreenState extends State<GenerateBarcodeScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScreenshotController _screenshotController = ScreenshotController();
-  String _qrData = '';
+  String _barcodeData = '';
+  BarcodeType _barcodeType = BarcodeType.Code128;
 
-  void _generateQR() {
+  final List<Map<String, dynamic>> _barcodeTypes = [
+    {'name': 'Code 128', 'type': BarcodeType.Code128},
+    {'name': 'Code 39', 'type': BarcodeType.Code39},
+    {'name': 'EAN-13', 'type': BarcodeType.EAN13},
+    {'name': 'EAN-8', 'type': BarcodeType.EAN8},
+    {'name': 'UPC-A', 'type': BarcodeType.UPCA},
+  ];
+
+  // دالة تحويل BarcodeType إلى كائن Barcode المطلوب في BarcodeWidget
+  Barcode _getBarcodeObject(BarcodeType type) {
+    switch (type) {
+      case BarcodeType.Code128:
+        return Barcode.code128();
+      case BarcodeType.Code39:
+        return Barcode.code39();
+      case BarcodeType.EAN13:
+        return Barcode.ean13();
+      case BarcodeType.EAN8:
+        return Barcode.ean8();
+      case BarcodeType.UPCA:
+        return Barcode.upcA();
+      default:
+        return Barcode.code128();
+    }
+  }
+
+  void _generateBarcode() {
     if (_controller.text.trim().isNotEmpty) {
       setState(() {
-        _qrData = _controller.text.trim();
+        _barcodeData = _controller.text.trim();
       });
     }
   }
 
   Future<void> _saveToGallery() async {
-    if (_qrData.isEmpty) return;
+    if (_barcodeData.isEmpty) return;
     try {
       final status = await Permission.storage.request();
       if (status.isGranted || await Permission.photos.request().isGranted) {
-        final image = await _screenshotController.capture();
+        final Uint8List? image = await _screenshotController.capture();
         if (image != null) {
-          await ImageGallerySaver.saveImage(
-            image,
-            name: 'qr_code_${DateTime.now().millisecondsSinceEpoch}',
-          );
+          // استخدام مكتبة Gal للحفظ في معرض الصور
+          await Gal.putImageBytes(image);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Saved to gallery!')),
@@ -56,18 +80,18 @@ class _GenerateQRScreenState extends State<GenerateQRScreen> {
     }
   }
 
-  Future<void> _shareQR() async {
-    if (_qrData.isEmpty) return;
+  Future<void> _shareBarcode() async {
+    if (_barcodeData.isEmpty) return;
     try {
       final image = await _screenshotController.capture();
       if (image != null) {
         final directory = await getTemporaryDirectory();
-        final imagePath = '${directory.path}/qr_code.png';
+        final imagePath = '${directory.path}/barcode.png';
         final file = File(imagePath);
         await file.writeAsBytes(image);
         await Share.shareXFiles(
           [XFile(imagePath)],
-          text: 'Generated QR Code',
+          text: 'Generated Barcode',
         );
       }
     } catch (e) {
@@ -89,22 +113,45 @@ class _GenerateQRScreenState extends State<GenerateQRScreen> {
           TextField(
             controller: _controller,
             decoration: InputDecoration(
-              labelText: 'Enter text or URL',
-              hintText: 'https://example.com',
-              prefixIcon: const Icon(Icons.link),
+              labelText: 'Enter barcode data',
+              hintText: '123456789012',
+              prefixIcon: const Icon(Icons.numbers),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               filled: true,
             ),
-            maxLines: 3,
-            minLines: 1,
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<BarcodeType>(
+            value: _barcodeType,
+            decoration: InputDecoration(
+              labelText: 'Barcode Type',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+            ),
+            items: _barcodeTypes.map((type) {
+              return DropdownMenuItem<BarcodeType>(
+                value: type['type'] as BarcodeType,
+                child: Text(type['name'] as String),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _barcodeType = value;
+                });
+              }
+            },
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
-            onPressed: _generateQR,
-            icon: const Icon(Icons.qr_code),
-            label: const Text('Generate QR Code'),
+            onPressed: _generateBarcode,
+            icon: const Icon(Icons.barcode_reader),
+            label: const Text('Generate Barcode'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
@@ -113,12 +160,12 @@ class _GenerateQRScreenState extends State<GenerateQRScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          if (_qrData.isNotEmpty) ...[
+          if (_barcodeData.isNotEmpty) ...[
             Center(
               child: Screenshot(
                 controller: _screenshotController,
                 child: Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -130,27 +177,25 @@ class _GenerateQRScreenState extends State<GenerateQRScreen> {
                       ),
                     ],
                   ),
-                  child: QrImageView(
-                    data: _qrData,
-                    version: QrVersions.auto,
-                    size: 250,
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    errorCorrectionLevel: QrErrorCorrectLevel.H,
+                  child: BarcodeWidget(
+                    barcode: _getBarcodeObject(_barcodeType), // تم التعديل هنا ليمر كائن Barcode صحيح
+                    data: _barcodeData,
+                    width: 300,
+                    height: 120,
+                    drawText: true,
                   ),
                 ),
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              _qrData,
+              _barcodeData,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.grey[600],
-                fontSize: 12,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 24),
             Row(
@@ -173,7 +218,7 @@ class _GenerateQRScreenState extends State<GenerateQRScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: _shareQR,
+                    onPressed: _shareBarcode,
                     icon: const Icon(Icons.share),
                     label: const Text('Share'),
                     style: ElevatedButton.styleFrom(
