@@ -1,11 +1,12 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gal/gal.dart';
 
 class GenerateBarcodeScreen extends StatefulWidget {
   const GenerateBarcodeScreen({super.key});
@@ -23,10 +24,27 @@ class _GenerateBarcodeScreenState extends State<GenerateBarcodeScreen> {
   final List<Map<String, dynamic>> _barcodeTypes = [
     {'name': 'Code 128', 'type': BarcodeType.Code128},
     {'name': 'Code 39', 'type': BarcodeType.Code39},
-    {'name': 'EAN-13', 'type': BarcodeType.EAN13},
-    {'name': 'EAN-8', 'type': BarcodeType.EAN8},
-    {'name': 'UPC-A', 'type': BarcodeType.UPCA},
+    {'name': 'EAN-13', 'type': BarcodeType.Ean13},
+    {'name': 'EAN-8', 'type': BarcodeType.Ean8},
+    {'name': 'UPC-A', 'type': BarcodeType.UpcA},
   ];
+
+  Barcode _getBarcodeObject(BarcodeType type) {
+    switch (type) {
+      case BarcodeType.Code128:
+        return Barcode.code128();
+      case BarcodeType.Code39:
+        return Barcode.code39();
+      case BarcodeType.Ean13:
+        return Barcode.ean13();
+      case BarcodeType.Ean8:
+        return Barcode.ean8();
+      case BarcodeType.UpcA:
+        return Barcode.upcA();
+      default:
+        return Barcode.code128();
+    }
+  }
 
   void _generateBarcode() {
     if (_controller.text.trim().isNotEmpty) {
@@ -41,12 +59,9 @@ class _GenerateBarcodeScreenState extends State<GenerateBarcodeScreen> {
     try {
       final status = await Permission.storage.request();
       if (status.isGranted || await Permission.photos.request().isGranted) {
-        final image = await _screenshotController.capture();
+        final Uint8List? image = await _screenshotController.capture();
         if (image != null) {
-          await ImageGallerySaver.saveImage(
-            image,
-            name: 'barcode_${DateTime.now().millisecondsSinceEpoch}',
-          );
+          await Gal.putImageBytes(image);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Saved to gallery!')),
@@ -161,7 +176,7 @@ class _GenerateBarcodeScreenState extends State<GenerateBarcodeScreen> {
                     ],
                   ),
                   child: BarcodeWidget(
-                    barcode: _barcodeType,
+                    barcode: _getBarcodeObject(_barcodeType),
                     data: _barcodeData,
                     width: 300,
                     height: 120,
